@@ -1,0 +1,16 @@
+{
+  "name": "homey-web-api-example",
+  "version": "1.0.0",
+  "description": "Homey Web API example",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Robert Klep <robert@klep.name>",
+  "license": "MIT",
+  "dependencies": {
+    "athom-cli": "^3.0.2",
+    "restify": "^8.5.1",
+    "restify-cors-middleware": "^1.1.1"
+  }
+}
