@@ -2,6 +2,8 @@ node_modules
 npm-debug.log
 data
 
+settings.json
+
 # Intellij
 *.iml
 .idea

@@ -1,15 +1,15 @@
 {
-  "name": "homey-web-api-example",
-  "version": "1.0.0",
-  "description": "Homey Web API example",
+  "name": "homey-grafana",
+  "version": "0.0.1-SNAPSHOT",
+  "description": "A nodejs bridge to view Homey's insights logs in Grafana, without any additional data storage required",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Robert Klep <robert@klep.name>",
+  "author": "Julius van Dis <vandis.j@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "athom-cli": "^3.0.2",
+    "homey": "^2.7.0",
     "restify": "^8.5.1",
     "restify-cors-middleware": "^1.1.1"
   }

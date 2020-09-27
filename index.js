@@ -1,4 +1,4 @@
-const {AthomApi} = require('athom-cli');
+const {AthomApi} = require('homey');
 
 async function fetchHomey() {
     console.log("Initializing homey")
