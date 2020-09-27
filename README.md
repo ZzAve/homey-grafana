@@ -8,16 +8,11 @@ This can be found in the plugin section of your Grafana instance
 
 Start the api that integrates with Homey:
 ```bash
+$ npm ci
+$ homey login # to allow the homey dependency to access your homey
 $ node app.js
 ```
 
-The first time the athom-cli dependency requires you to log in:
-
-```bash
-✓ Logging in...
-To log in with your Athom Account, please visit https://cli.athom.com?port=XXXX&clientId=<someHexadecimalNumbersBasedId>
-? Paste the code: 
-```
 
 Follow the instructions, and you'll be good to go. Per default port 8080 is used and you can start creating your first dasbhoard
 
