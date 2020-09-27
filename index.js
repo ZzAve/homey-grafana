@@ -92,9 +92,12 @@ const decomposeReadableMetricName = (readableMetric) => {
 
 const getMetricFilter = (query) => {
     let filter;
-    if (query.target.startsWith("/")) {
+    if (query.target.startsWith("/") && query.target.endsWith("/")) {
         //handle as regex
-        filter = metric => metric.originalTarget.match(query.target) !== null
+        console.log("regex search")
+        const flags = query.target.replace(/.*\/([gimy]*)$/, '$1');
+        const pattern = query.target.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1');
+        filter = metric => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
     } else {
         //handle as string
         filter = metric => metric.originalTarget.includes(query.target);

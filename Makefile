@@ -9,6 +9,9 @@ run:
 	docker run --name ${docker-name} --rm -d -p8080:8080 ${docker-tag}
 .PHONY: run
 
+run-all:
+	docker-compose up
+.PHONY: run-all
 stop:
 	docker stop ${docker-name}
 .PHONY: stop

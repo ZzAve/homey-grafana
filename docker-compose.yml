@@ -3,7 +3,7 @@ version: "3"
 services:
 
   grafana:
-    container_name: hig-grafana
+    container_name: homey-grafana-grafana
     image: grafana/grafana:7.0.3
     ports:
       - 3000:3000
@@ -12,7 +12,7 @@ services:
     volumes:
       - $PWD/data:/var/lib/grafana
   webapp:
-    container_name: hig-homey-insights-simple-json
+    container_name: homey-grafana-api
     build: .
     image: zzave/homey-grafana:latest
     ports:
