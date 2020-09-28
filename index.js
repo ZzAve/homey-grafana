@@ -1,4 +1,7 @@
 const {AthomApi} = require('homey');
+const Debug = require('debug')
+
+const debug = Debug("homey-grafana:homey-service");
 
 async function fetchHomey() {
     console.log("Initializing homey")
@@ -52,8 +55,11 @@ async function fetchAllMetrics() {
     console.log("Getting all metrics");
     const homey = await getHomey();
     let metrics = await homey.insights.getLogs();
-    console.log(metrics)
     let enrichedMetrics = metrics.map(getEnrichedMetrics);
+
+    debug("All metrics:")
+    debug(enrichedMetrics.map(it=> it.originalTarget) )
+    debug("---")
     return enrichedMetrics
 }
 
@@ -94,7 +100,7 @@ const getMetricFilter = (query) => {
     let filter;
     if (query.target.startsWith("/") && query.target.endsWith("/")) {
         //handle as regex
-        console.log("regex search")
+        debug("regex search")
         const flags = query.target.replace(/.*\/([gimy]*)$/, '$1');
         const pattern = query.target.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1');
         filter = metric => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
@@ -106,7 +112,7 @@ const getMetricFilter = (query) => {
 };
 
 const searchMetrics = async (query, opts) => {
-    console.log(`in searchMetrics for query : ${JSON.stringify(query)}, ${JSON.stringify(opts)}`);
+    console.log(`SearchMetrics for query: ${JSON.stringify(query)}, opts: ${JSON.stringify(opts || {})}`);
     const allMetrics = await getAllMetrics();
     if (!query || !query.target || 0 === query.target.length) {
         return allMetrics
@@ -116,7 +122,7 @@ const searchMetrics = async (query, opts) => {
     return allMetrics.filter(filter);
 };
 const convertRangeToResolution = (range) => {
-    console.log("range: ", JSON.stringify(range))
+    debug("range: ", JSON.stringify(range))
 
     // const rangeToResolutionMap = (
     //     "lastHour" | "lastHourLowRes" | "last6Hours" | "last6HoursLowRes" | "last24Hours" | "last3Days" |
@@ -131,7 +137,7 @@ const convertRangeToResolution = (range) => {
     const RESOLUTION_BUFFER = 1.1
     // difference in hours
     const diffInHours = (now - from) / (1000.0 * 60 * 60)
-    console.log("diffInHours ", diffInHours)
+    debug("diffInHours ", diffInHours)
     if (diffInHours <= 1 * RESOLUTION_BUFFER) return "lastHour";
     if (diffInHours <= 6 * RESOLUTION_BUFFER) return "last6Hours"
     if (diffInHours <= 24 * RESOLUTION_BUFFER) return "last24Hours"
@@ -151,13 +157,10 @@ const convertRangeToResolution = (range) => {
     console.error("Weird resolution requested: ", JSON.stringify(range))
     return DEFAULT_RESOLUTION
 }
-const getMetricsForTarget = async (target, range) => {
-    const resolution = convertRangeToResolution(range);
-    console.log("Resolution picked: ", resolution);
-
+const getMetricsForTarget = async (target, resolution) => {
     // console.log("target: " , JSON.stringify(target));
     const metrics = Promise.all(target.metrics.map(async metric => {
-        console.log("Fetching metric for ", JSON.stringify(metric));
+       console.log("Fetching metric for ", JSON.stringify(metric.originalTarget));
         const logEntries = await getLogEntries(
             {
                 uri: metric.uri,
@@ -177,8 +180,10 @@ const getMetricsForTarget = async (target, range) => {
 };
 
 const fetchMetrics = async (targets, range) => {
+    const resolution = convertRangeToResolution(range);
+    debug("Resolution picked: ", resolution);
     return Promise.all(targets.map(async target => {
-        return await getMetricsForTarget(target, range)
+        return await getMetricsForTarget(target, resolution)
     }));
 };
 

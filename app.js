@@ -1,6 +1,10 @@
 const  restify = require ("restify");
 const HomeyMetricResolver = require( "./index.js");
 const corsMiddleware = require('restify-cors-middleware');
+const Debug = require('debug')
+
+const debug = Debug("homey-grafana:api");
+
 
 const cors = corsMiddleware({
     preflightMaxAge: 5,
@@ -29,7 +33,7 @@ const searchMetrics = async (req, res, next) => {
 };
 
 const queryMetrics = async (req, res, next) => {
-    console.log("in QueryMetric");
+    debug("in QueryMetric");
     // console.log(`Request: ${req}`);
     // console.log(`Request body: ${req.body}`);
     res.send(200, await HomeyMetricResolver.queryMetrics(req.body));
@@ -37,7 +41,7 @@ const queryMetrics = async (req, res, next) => {
 };
 
 const fetchAnnotations = (req, res, next) => {
-    console.log("in fetch annotations")
+   debug("in fetch annotations")
     res.send(200, {});
     next();
 };
@@ -74,8 +78,6 @@ server.post('/tag-values', getTagValuesForFilters);
 
 server.listen(8080, async  () => {
     console.log('%s listening at %s', server.name, server.url);
-    console.log("homedir:");
-    console.log(require('os').homedir());
     await HomeyMetricResolver.getHomey();
     console.log("Got homey")
 });
