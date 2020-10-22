@@ -1,7 +1,9 @@
 const {AthomApi} = require('homey');
 const Debug = require('debug')
+const NodeCache = require("node-cache");
 
 const debug = Debug("homey-grafana:homey-service");
+const metricNameCache = new NodeCache({stdTTL: 180});
 
 async function fetchHomey() {
     console.log("Initializing homey")
@@ -55,21 +57,27 @@ async function fetchAllMetrics() {
     console.log("Getting all metrics");
     const homey = await getHomey();
     let metrics = await homey.insights.getLogs();
-    let enrichedMetrics = metrics.map(getEnrichedMetrics);
+    let enrichedMetrics = metrics
+        .filter(it => it.type !== "boolean")
+        .map(getEnrichedMetrics);
 
     debug("All metrics:")
-    debug(enrichedMetrics.map(it=> it.originalTarget) )
+    debug(enrichedMetrics.map(it => it.originalTarget))
     debug("---")
     return enrichedMetrics
 }
 
+const KEY = "METRICS_NAME_CACHE_KEY"
+
 async function getAllMetrics() {
-    if (_metrics === undefined) {
-        _metrics = fetchAllMetrics();
+    let result = metricNameCache.get(KEY)
+    if (result === undefined) {
+        result = {metrics: await fetchAllMetrics()};
+        metricNameCache.set(KEY, result)
     }
 
     // const allMetrics = ["upper_25", "upper_50", "upper_75", "upper_90", "upper_95"];
-    return await _metrics;
+    return result.metrics;
 }
 
 const DEFAULT_RESOLUTION = "last6Hours";
@@ -85,9 +93,9 @@ async function getLogEntries(metric) {
     return logEntries
 }
 
-const composeReadableMetricName = (metric) => `${metric.uriObj.name}|${metric.id}|${metric.uri}`;
+const composeReadableMetricName = (metric) => `${metric.uriObj.name}~${metric.id}~${metric.uri}`;
 const decomposeReadableMetricName = (readableMetric) => {
-    let metricParts = readableMetric.target.split("|");
+    let metricParts = readableMetric.target.split("~");
     return ({
         originalTarget: readableMetric,
         deviceName: metricParts[0],
@@ -97,18 +105,15 @@ const decomposeReadableMetricName = (readableMetric) => {
 };
 
 const getMetricFilter = (query) => {
-    let filter;
-    if (query.target.startsWith("/") && query.target.endsWith("/")) {
-        //handle as regex
-        debug("regex search")
-        const flags = query.target.replace(/.*\/([gimy]*)$/, '$1');
-        const pattern = query.target.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1');
-        filter = metric => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
-    } else {
-        //handle as string
-        filter = metric => metric.originalTarget.includes(query.target);
+    try {
+        const flags = ""
+        const pattern = query.target.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1');
+        console.log("flags: ", flags)
+        console.log("pattern: ", pattern)
+        return metric => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
+    } catch (e) {
+        return false
     }
-    return filter;
 };
 
 const searchMetrics = async (query, opts) => {
@@ -118,8 +123,12 @@ const searchMetrics = async (query, opts) => {
         return allMetrics
     }
 
-    let filter = getMetricFilter(query);
-    return allMetrics.filter(filter);
+    try {
+        let filter = getMetricFilter(query);
+        return allMetrics.filter(filter);
+    } catch (e) {
+        return []
+    }
 };
 const convertRangeToResolution = (range) => {
     debug("range: ", JSON.stringify(range))
@@ -158,20 +167,28 @@ const convertRangeToResolution = (range) => {
     return DEFAULT_RESOLUTION
 }
 const getMetricsForTarget = async (target, resolution) => {
-    // console.log("target: " , JSON.stringify(target));
+    debug("target: ", JSON.stringify(target));
     const metrics = Promise.all(target.metrics.map(async metric => {
-       console.log("Fetching metric for ", JSON.stringify(metric.originalTarget));
-        const logEntries = await getLogEntries(
-            {
-                uri: metric.uri,
-                id: metric.id,
-                resolution: resolution
+        console.log("Fetching metric for ", JSON.stringify(metric));
+        try {
+            const logEntries = await getLogEntries(
+                {
+                    uri: metric.uri,
+                    id: metric.id,
+                    resolution: resolution
+                }
+            );
+            const dataPoints = logEntries.values.map(dp => ([dp.v, new Date(dp.t).getTime()]));
+            return {
+                target: `${metric.deviceName}~${metric.id}`,
+                datapoints: dataPoints
             }
-        );
-        const dataPoints = logEntries.values.map(dp => ([dp.v, new Date(dp.t).getTime()]));
-        return {
-            target: `${metric.deviceName}|${metric.id}`,
-            datapoints: dataPoints
+        } catch (e) {
+            console.warn(`Issue resolving log entries for metric: ${JSON.stringify(metric)} resolution: ${resolution}`, e)
+            return {
+                target: `${metric.deviceName}~${metric.id}`,
+                datapoints: []
+            }
         }
     }));
 
@@ -211,7 +228,6 @@ const queryMetrics = async (body) => {
 
     return series.flat()
 };
-
 
 module.exports = {
     getHomey,

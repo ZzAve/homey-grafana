@@ -11,6 +11,7 @@
   "dependencies": {
     "debug": "^4.2.0",
     "homey": "^2.7.0",
+    "node-cache": "^5.1.2",
     "restify": "^8.5.1",
     "restify-cors-middleware": "^1.1.1"
   }
