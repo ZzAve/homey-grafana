@@ -24,26 +24,6 @@ async function getHomey() {
     return await _homey
 }
 
-
-async function getDevices() {
-    const homey = await getHomey();
-
-    // Example: list all devices.
-    let devices = {};
-    try {
-        devices = await homey.devices.getDevices();
-    } catch (e) {
-        console.log(e);
-    }
-    return Object.values(devices).map((value) => value.name)
-
-    // Example: trigger a flow.
-    // const flow = await homey.flow.getFlow({ id : FLOW_ID });
-    // await homey.flow.testFlow({ flow, tokens : [] });
-}
-
-let _metrics = undefined;
-
 const getEnrichedMetrics = (metric) => {
     return ({
         originalTarget: composeReadableMetricName(metric),
@@ -54,14 +34,14 @@ const getEnrichedMetrics = (metric) => {
 };
 
 async function fetchAllMetrics() {
-    console.log("Getting all metrics");
+    console.log("Fetching all metrics");
     const homey = await getHomey();
     let metrics = await homey.insights.getLogs();
     let enrichedMetrics = metrics
         .filter(it => it.type !== "boolean")
         .map(getEnrichedMetrics);
 
-    debug("All metrics:")
+    console.log("All metrics: #", enrichedMetrics.length)
     debug(enrichedMetrics.map(it => it.originalTarget))
     debug("---")
     return enrichedMetrics
@@ -89,27 +69,15 @@ async function getLogEntries(metric) {
         id: metric.id,
         resolution: metric.resolution
     });
-    // console.log(logEntries);
     return logEntries
 }
 
 const composeReadableMetricName = (metric) => `${metric.uriObj.name}~${metric.id}~${metric.uri}`;
-const decomposeReadableMetricName = (readableMetric) => {
-    let metricParts = readableMetric.target.split("~");
-    return ({
-        originalTarget: readableMetric,
-        deviceName: metricParts[0],
-        id: metricParts[1],
-        uri: metricParts[2]
-    });
-};
 
 const getMetricFilter = (query) => {
     try {
         const flags = ""
         const pattern = query.target.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1');
-        console.log("flags: ", flags)
-        console.log("pattern: ", pattern)
         return metric => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
     } catch (e) {
         return false
@@ -117,7 +85,7 @@ const getMetricFilter = (query) => {
 };
 
 const searchMetrics = async (query, opts) => {
-    console.log(`SearchMetrics for query: ${JSON.stringify(query)}, opts: ${JSON.stringify(opts || {})}`);
+    debug(`SearchMetrics for query: ${JSON.stringify(query)}, opts: ${JSON.stringify(opts || {})}`);
     const allMetrics = await getAllMetrics();
     if (!query || !query.target || 0 === query.target.length) {
         return allMetrics
@@ -192,8 +160,7 @@ const getMetricsForTarget = async (target, resolution) => {
         }
     }));
 
-    // console.log(JSON.stringify(await metrics));
-    return (await metrics)
+    return await metrics
 };
 
 const fetchMetrics = async (targets, range) => {
@@ -204,34 +171,26 @@ const fetchMetrics = async (targets, range) => {
     }));
 };
 
-const enrichTargetsWithMetrics = (queryTargets) => {
-    // console.log(queryTargets);
-    return Promise.all(queryTargets.map(async target => {
+const enrichTargetsWithMetrics = (queryTargets) =>
+    Promise.all(queryTargets.map(async target => {
         const metrics = await searchMetrics(target, {strict: true});
-        // console.log("metrics: ", JSON.stringify(metrics));
         return {
             ...target,
             metrics
         };
     }));
-};
 
 const queryMetrics = async (body) => {
     let queryTargets = body.targets;
-    // console.log(body);
     console.log(`Querying for targets ${JSON.stringify(queryTargets)}`);
     const queryMetrics = await enrichTargetsWithMetrics(queryTargets);
-    // console.log(`Querying for metrics ${JSON.stringify(queryMetrics)}`);
-    // const targets = queryTargets.map(decomposeReadableMetricName);
     const series = await fetchMetrics(queryMetrics, body.range);
-    // console.log(series);
 
     return series.flat()
 };
 
 module.exports = {
     getHomey,
-    getDevices,
     searchMetrics,
     queryMetrics
 };

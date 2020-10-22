@@ -6,7 +6,11 @@ build:
 .PHONY: build
 
 run:
-	docker run --name ${docker-name} --rm -d -p8080:8080 ${docker-tag}
+	docker run --rm -i \
+			--name ${docker-name} \
+			--mount type=bind,source="$(PWD)"/settings,target=/root/.athom-cli \
+			-p8080:8080 \
+			${docker-tag}
 .PHONY: run
 
 run-all:

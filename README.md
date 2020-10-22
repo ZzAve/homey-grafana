@@ -13,30 +13,35 @@ $ homey login # to allow the homey dependency to access your homey
 $ node app.js
 ```
 
-
 Follow the instructions, and you'll be good to go. Per default port 8080 is used and you can start creating your first dasbhoard
 
-(example dashboard you can import is coming ....) 
+An example dashboard can be found in [example_dashboard.json](example_dashboard.json) 
 
 ## With docker 
 Run homey-grafana, both the API and grafana (with necessary plugins):
 
 Ensure the nodejs app can use the .athom-cli credentials 
+
 ```bash
-$ cp ~/.athom-cli/settings.json . # hack to include athom-cli credentials to docker container
+$ cp ~/.athom-cli/settings.json ./settings 
 ```
-```bash
+
+```bash 
 $ make build
-$ docker-compose up
+$ make run-all
 ```
 
 Navigate to `http://localhost:3000` to view grafana and start setting it up
 
-To run without grafana:
+To run without grafana, and use docker command directly:
 
 ```bash
-$ make build
-$ make run
+$ docker build -t zzave/homey-grafana:latest .
+$ docker run --rm -d \
+        --name homey-grafana \
+        -v ${PWD}/settings:/root/.athom-cli \
+        -p8080:8080 \
+        zzave/homey-grafana:latest
 ```
 
 The api is available on port `8080`
