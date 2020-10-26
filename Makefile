@@ -8,7 +8,7 @@ build:
 run:
 	docker run --rm -i \
 			--name ${docker-name} \
-			--mount type=bind,source="$(PWD)"/settings,target=/root/.athom-cli \
+			--mount type=bind,source="$(PWD)"/settings,target=/home/node/.athom-cli \
 			-p8080:8080 \
 			-eDEBUG=* \
 			${docker-tag}

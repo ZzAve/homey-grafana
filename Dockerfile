@@ -28,7 +28,7 @@ ENV DEBUG_COLORS=true
 ENV NODE_ENV=production
 
 #RUN mkdir -p /home/node/.athom-cli && chown -R node:node /home/node/.athom-cli
-#USER node
+USER node
 
 ENTRYPOINT ["/bin/sh", "entrypoint.sh"]
 CMD [ "node", "app.js" ]

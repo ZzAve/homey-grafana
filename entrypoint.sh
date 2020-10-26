@@ -2,5 +2,6 @@
 
 #chown -R node:node /home/node/.athom-cli
 #ls -la ~
-#ls -la ~/.athom-cli
+mkdir -p ~/.athom-cli/
+touch ~/.athom-cli/settings.json
 exec "$@"
