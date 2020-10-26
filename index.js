@@ -1,8 +1,7 @@
-const {QuerySyntaxError} = require( "./querySyntaxError")
-
 const {AthomApi} = require('homey');
 const Debug = require('debug')
 const NodeCache = require("node-cache");
+const {AVAILABLE_FUNCTIONS} = require("./src/functions/Functions");
 
 const debug = Debug("homey-grafana:homey-service");
 const metricNameCache = new NodeCache({stdTTL: 180});
@@ -26,20 +25,18 @@ async function getHomey() {
     return await _homey
 }
 
-const getEnrichedMetrics = (metric) => {
-    return ({
-        originalTarget: composeReadableMetricName(metric),
-        deviceName: metric.uriObj.name,
-        id: metric.id,
-        uri: metric.uri
-    });
-};
+const getEnrichedMetrics = (metric) => ({
+    originalTarget: composeReadableMetricName(metric),
+    deviceName: metric.uriObj.name,
+    id: metric.id,
+    uri: metric.uri
+});
 
 async function fetchAllMetrics() {
     console.log("Fetching all metrics");
     const homey = await getHomey();
-    let metrics = await homey.insights.getLogs();
-    let enrichedMetrics = metrics
+    const metrics = await homey.insights.getLogs();
+    const enrichedMetrics = metrics
         .filter(it => it.type !== "boolean")
         .map(getEnrichedMetrics);
 
@@ -62,16 +59,14 @@ async function getAllMetrics() {
     return result.metrics;
 }
 
-const DEFAULT_RESOLUTION = "last6Hours";
 
 async function getLogEntries(metric) {
     const homey = await getHomey();
-    const logEntries = await homey.insights.getLogEntries({
+    return await homey.insights.getLogEntries({
         uri: metric.uri,
         id: metric.id,
         resolution: metric.resolution
-    });
-    return logEntries
+    })
 }
 
 const composeReadableMetricName = (metric) => `${metric.uriObj.name}~${metric.id}~${metric.uri}`;
@@ -89,7 +84,7 @@ const getMetricFilter = (query) => {
 const searchMetrics = async (query, opts) => {
     debug(`SearchMetrics for query: ${JSON.stringify(query)}, opts: ${JSON.stringify(opts || {})}`);
     const allMetrics = await getAllMetrics();
-    if ( !query || 0 === query.length) {
+    if (!query || 0 === query.length) {
         return allMetrics
     }
 
@@ -100,6 +95,9 @@ const searchMetrics = async (query, opts) => {
         return []
     }
 };
+
+const DEFAULT_RESOLUTION = "last6Hours";
+
 const convertRangeToResolution = (range) => {
     debug("range: ", JSON.stringify(range))
 
@@ -136,6 +134,7 @@ const convertRangeToResolution = (range) => {
     console.error("Weird resolution requested: ", JSON.stringify(range))
     return DEFAULT_RESOLUTION
 }
+
 const getMetricsForTarget = async (targetMetrics, resolution) => {
     debug("target: ", JSON.stringify(targetMetrics));
     const metrics = Promise.all(targetMetrics.map(async metric => {
@@ -164,128 +163,29 @@ const getMetricsForTarget = async (targetMetrics, resolution) => {
 
     return await metrics
 };
+
+/**
+ *   {
+ *     "target":"aliasSub(measure_temperature, \"(Thermometer\\s+)(.*?)~.*\", \"$2\")",
+ *     "refId":"A",
+ *     "hide":false,
+ *     "type":"timeserie"
+ *   }
+ *
+ * @param query - 'target' value, expression, or subExpression
+ * @param target - object of full target, raw request from client
+ * @param resolution - time window to resolve for
+ * @returns {Promise<*>}
+ */
 async function resolveSingleTarget(query, target, resolution) {
-    // Composing!
-    // ex: {"target":"alias(Weer~temperature~homey:manager:weather, weer)","refId":"A","type":"timeserie","metrics":[]}
-    //     {"target":"Weer~temperature~homey:manager:weather","refId":"A","type":"timeserie","metrics":[{"originalTarget":"Weer~temperature~homey:manager:weather","deviceName":"Weer","id":"temperature","uri":"homey:manager:weather"}]} +1ms
-    //  {"target":
-    // metricQuery
-    // metrics
-    // - select target
-    // - detect composed query
-    // - alias(<x>, <alias>)
-    // aliasStatement --> Expression (x) --> rename name property to <alias>
-    // - <x>
-    // metricStatement --> execute <x>
-
-    // tokenize, then execute?
-
-
-    let x
-    if (query.startsWith("alias("))
-        x = await aliasStatement(query, target, resolution)
-    else if ( query.startsWith("aliasSub("))
-        x = await aliasSubStatement(query, target, resolution)
-    else
-        x = await metricStatement(query, target, resolution)
-
-    return x
+    const applicableFunction = AVAILABLE_FUNCTIONS.find(it => it.hasMatchingSyntax(query));
+    if (!!applicableFunction) {
+        const instance = applicableFunction.of(query, target, resolution);
+        return await instance.apply(resolveSingleTarget.bind(this))
+    } else {
+        return await metricStatement(query, target, resolution)
+    }
 }
-
-
-/**
- *  Alias function alias(<metric>, "<alias>")
- ^alias\((.*),(\s+)?"(.*)"(\s+)?\)
-
- With regex replacement aliasSub(<metric>, "regexExpr", "<alias possibly using \n as arg ref>")
- ^aliasSub\((.*),(\s+)?"(.*)"(\s+)?,(\s+)?"(.*)"(\s+)?\)
-
-
- Metric:
- Weer~temperature~homey:manager:weather
-
- Metric with alias:
- alias(Weer~temperature~homey:manager:weather, weer)
- alias(Weer~temperature~homey:manager:weather, "weer")
-
- Metric with alias regex expression: (different expression needed!)
- aliasSub(Weer~temperature~homey:manager:weather,"(.*)~.*", "\1")
-
-
- Metric with nested function (such as alias)
- alias(alias(Weer~temperature~homey:manager:weather, weer), weer)
- alias(alias(Weer~temperature~homey:manager:weather, "weer"), "weer")
-
- Metric with alias, different spacing
- alias(alias(Weer~temperature~homey:manager:weather, "weer"),"weer")
-
- Multiple metrics
- (Weer~measure_temperature~homey:device:e4369673-59de-434b-8479-31d5cecb746b|Thermometer bureau ~measure_temperature~homey:device:9b3dbd80-c3d9-48a3-b422-e5dddd71d6a3)
-
- Multiple metrics, with alias
- alias((Weer~measure_temperature~homey:device:e4369673-59de-434b-8479-31d5cecb746b|Thermometer bureau ~measure_temperature~homey:device:9b3dbd80-c3d9-48a3-b422-e5dddd71d6a3), "weer")
-
-
- https://regexr.com/5erif
- *
- *
- *
- *
- *
- *
- * @type {RegExp}
- */
-const aliasRegex = new RegExp(/^alias\((.*),(\s+)?"(.*)"(\s+)?\)/)
-const aliasSubRegex = new RegExp(/^aliasSub\((.*),(\s+)?"(.*)"(\s+)?,(\s+)?"(.*)"(\s+)?\)/)
-
-/**
- *
- */
-const aliasStatement = async (query, target, resolution) => {
-    let matches = target.target.match(aliasRegex);
-    if (!matches){
-        throw new QuerySyntaxError('Alias statement should adhere to the following signature: alias(expression: Expression, alias: string)')
-    }
-
-    const subExpression = matches[1]
-    const alias = matches[3]
-
-    const result = await resolveSingleTarget(subExpression, target, resolution)
-
-    //Replace title
-    for (let entry of result){
-        entry.target = alias
-    }
-
-
-    return result
-}
-
-
-const aliasSubStatement = async (query, target, resolution) => {
-    let matches = query.match(aliasSubRegex);
-    if (!matches){
-        throw SyntaxError('AliasSub statement should adhere to the following signature: alias(expression: Expression, regex: string, alias: string)')
-    }
-
-    const subExpression = matches[1]
-    const regexMatch = new RegExp(matches[3])
-    const alias = matches[6]
-
-    const result = await resolveSingleTarget(subExpression, target, resolution)
-
-    //Replace title
-    for (let entry of result){
-        const target1 = entry.target.replace(regexMatch, alias);
-        entry.target = target1
-    }
-
-
-    return result
-}
-
-
-
 
 const metricStatement = async (query, target, resolution) => {
     const metrics = await searchMetrics(query, {strict: true});
