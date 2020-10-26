@@ -1,3 +1,5 @@
+const {QuerySyntaxError} = require( "./querySyntaxError");
+
 const restify = require("restify");
 const HomeyMetricResolver = require("./index.js");
 const corsMiddleware = require('restify-cors-middleware');
@@ -30,8 +32,21 @@ const searchMetrics = async (req, res, next) => {
 
 const queryMetrics = async (req, res, next) => {
     debug("in QueryMetric");
-    res.send(200, await HomeyMetricResolver.queryMetrics(req.body));
+    try {
+
+    let body = await HomeyMetricResolver.queryMetrics(req.body);
+    res.send(200, body);
     next();
+    } catch (e ){
+        if (e instanceof  QuerySyntaxError){
+            res.send(500, {message:e.message})
+        }
+        else {
+            console.error("Unknown, uncaught error occurred: ",e)
+            res.send(500, {message:e.message})
+        }
+        next()
+    }
 };
 
 const fetchAnnotations = (req, res, next) => {
