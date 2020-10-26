@@ -8,6 +8,9 @@
   },
   "author": "Julius van Dis <vandis.j@gmail.com>",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "dependencies": {
     "debug": "^4.2.0",
     "homey": "^2.7.0",
