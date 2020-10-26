@@ -1,6 +1,6 @@
 *
+!src/**
 !entrypoint.sh
 !app.js
-!index.js
 !package*.json
 !README.md

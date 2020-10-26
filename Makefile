@@ -10,12 +10,14 @@ run:
 			--name ${docker-name} \
 			--mount type=bind,source="$(PWD)"/settings,target=/root/.athom-cli \
 			-p8080:8080 \
+			-eDEBUG=* \
 			${docker-tag}
 .PHONY: run
 
 run-all:
 	docker-compose up
 .PHONY: run-all
+
 stop:
 	docker stop ${docker-name}
 .PHONY: stop

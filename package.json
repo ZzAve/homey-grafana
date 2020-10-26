@@ -2,7 +2,7 @@
   "name": "homey-grafana",
   "version": "0.0.1-SNAPSHOT",
   "description": "A nodejs bridge to view Homey's insights logs in Grafana, without any additional data storage required",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

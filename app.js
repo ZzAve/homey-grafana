@@ -1,8 +1,7 @@
-const {QuerySyntaxError} = require( "./querySyntaxError");
-
 const restify = require("restify");
-const HomeyMetricResolver = require("./index.js");
 const corsMiddleware = require('restify-cors-middleware');
+const HomeyMetricResolver = require("./src/HomeyMetricResolver");
+const {QuerySyntaxError} = require("./src/QuerySyntaxError");
 const Debug = require('debug')
 
 const debug = Debug("homey-grafana:api");
@@ -34,16 +33,15 @@ const queryMetrics = async (req, res, next) => {
     debug("in QueryMetric");
     try {
 
-    let body = await HomeyMetricResolver.queryMetrics(req.body);
-    res.send(200, body);
-    next();
-    } catch (e ){
-        if (e instanceof  QuerySyntaxError){
-            res.send(500, {message:e.message})
-        }
-        else {
-            console.error("Unknown, uncaught error occurred: ",e)
-            res.send(500, {message:e.message})
+        let body = await HomeyMetricResolver.queryMetrics(req.body);
+        res.send(200, body);
+        next();
+    } catch (e) {
+        if (e instanceof QuerySyntaxError) {
+            res.send(500, {message: e.message})
+        } else {
+            console.error("Unknown, uncaught error occurred: ", e)
+            res.send(500, {message: e.message})
         }
         next()
     }

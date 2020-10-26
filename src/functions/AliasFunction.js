@@ -1,4 +1,4 @@
-const {QuerySyntaxError} = require("../../querySyntaxError");
+const {QuerySyntaxError} = require("../QuerySyntaxError");
 
 const aliasRegex = new RegExp(/^alias\((.*),(\s+)?"(.*)"(\s+)?\)/)
 

@@ -9,7 +9,7 @@ services:
     ports:
       - 3000:3000
     environment:
-      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+      GF_INSTALL_PLUGINS: grafana-simple-json-datasource
     volumes:
       - $PWD/data:/var/lib/grafana
     user: "104"

@@ -1,7 +1,7 @@
 const {AthomApi} = require('homey');
 const Debug = require('debug')
 const NodeCache = require("node-cache");
-const {AVAILABLE_FUNCTIONS} = require("./src/functions/Functions");
+const {AVAILABLE_FUNCTIONS} = require("./functions/Functions");
 
 const debug = Debug("homey-grafana:homey-service");
 const metricNameCache = new NodeCache({stdTTL: 180});
@@ -177,7 +177,7 @@ const getMetricsForTarget = async (targetMetrics, resolution) => {
  * @param resolution - time window to resolve for
  * @returns {Promise<*>}
  */
-async function resolveSingleTarget(query, target, resolution) {
+const resolveSingleTarget = async (query, target, resolution) => {
     const applicableFunction = AVAILABLE_FUNCTIONS.find(it => it.hasMatchingSyntax(query));
     if (!!applicableFunction) {
         const instance = applicableFunction.of(query, target, resolution);
