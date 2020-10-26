@@ -2,6 +2,13 @@ const {QuerySyntaxError} = require("../QuerySyntaxError");
 
 const aliasRegex = new RegExp(/^alias\((.*),(\s+)?"(.*)"(\s+)?\)/)
 
+/**
+ * Alias function allows you to return an alias for the displayName of the requested target
+ *
+ * example:
+ *  alias("loadavg","Memory usage") will try and resolve all metrics containing 'loadavg' in them,
+ *  replacing the displayName (called 'target' in the api) with "Memory usage")
+ */
 class AliasFunction {
     constructor(query, originalTarget, resolution, regexMatches) {
         this._query = query;
