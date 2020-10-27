@@ -89,7 +89,7 @@ const searchMetrics = async (query, opts) => {
     }
 
     try {
-        let filter = getMetricFilter(query);
+        const filter = getMetricFilter(query);
         return allMetrics.filter(filter);
     } catch (e) {
         return []

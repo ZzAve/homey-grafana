@@ -24,7 +24,7 @@ const getRoot = (req, res, next) => {
 };
 
 const searchMetrics = async (req, res, next) => {
-    const metrics = await HomeyMetricResolver.searchMetrics(req.body);
+    const metrics = await HomeyMetricResolver.searchMetrics(req.body.target);
     res.send(200, metrics.map(m => m.originalTarget));
     next();
 };
