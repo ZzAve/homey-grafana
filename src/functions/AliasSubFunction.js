@@ -15,10 +15,10 @@ const aliasSubRegex = new RegExp(/^aliasSub\((.*),(\s+)?"(.*)"(\s+)?,(\s+)?"(.*)
  *  The above exmple will replace the displayname with "memory usage net.i-dev.betterlogic"
  */
 class AliasSubFunction {
-    constructor(query, originalTarget, resolution, regexMatches) {
+    constructor(query, originalTarget, range, regexMatches) {
         this._query = query;
         this._originalTarget = originalTarget;
-        this._resolution = resolution
+        this._range = range
 
 
         this._subQuery = regexMatches[1]
@@ -30,7 +30,7 @@ class AliasSubFunction {
         const result = await subQueryResolver(
             this._subQuery,
             this._originalTarget,
-            this._resolution)
+            this._range)
 
         //Replace title
         for (let entry of result){
@@ -43,13 +43,13 @@ class AliasSubFunction {
 
     static hasMatchingSyntax =query => query.startsWith("aliasSub(")
 
-    static of( query, originalTarget, resolution){
+    static of( query, originalTarget, range){
         let matches = query.match(aliasSubRegex);
         if (!matches){
             throw new QuerySyntaxError('AliasSub statement should adhere to the following signature: alias(expression: Expression, regex: string, alias: string)')
         }
 
-        return new AliasSubFunction(query, originalTarget, resolution, matches)
+        return new AliasSubFunction(query, originalTarget, range, matches)
     }
 
 }
