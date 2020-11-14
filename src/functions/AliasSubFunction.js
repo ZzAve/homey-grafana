@@ -43,7 +43,7 @@ class AliasSubFunction {
 
     static hasMatchingSyntax =query => query.startsWith("aliasSub(")
 
-    static of( query, originalTarget, resolution){
+    static of( query, originalTarget, resolution, range){
         let matches = query.match(aliasSubRegex);
         if (!matches){
             throw new QuerySyntaxError('AliasSub statement should adhere to the following signature: alias(expression: Expression, regex: string, alias: string)')
