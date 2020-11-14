@@ -10,10 +10,10 @@ const aliasRegex = new RegExp(/^alias\((.*),(\s+)?"(.*)"(\s+)?\)/)
  *  replacing the displayName (called 'target' in the api) with "Memory usage")
  */
 class AliasFunction {
-    constructor(query, originalTarget, resolution, regexMatches) {
+    constructor(query, originalTarget, range, regexMatches) {
         this._query = query;
         this._originalTarget = originalTarget;
-        this._resolution = resolution
+        this._range = range
 
         this._subQuery = regexMatches[1]
         this._alias = regexMatches[3]
@@ -23,7 +23,7 @@ class AliasFunction {
         const result = await subQueryResolver(
             this._subQuery,
             this._originalTarget,
-            this._resolution)
+            this._range)
 
         //Replace title
         for (let entry of result){
@@ -35,13 +35,13 @@ class AliasFunction {
 
     static hasMatchingSyntax = query => query.startsWith("alias(")
 
-    static of( query, originalTarget, resolution, range){
+    static of( query, originalTarget, range){
         let matches = query.match(aliasRegex);
         if (!matches){
             throw new QuerySyntaxError('Alias statement should adhere to the following signature: alias(expression: Expression, alias: string)')
         }
 
-        return new AliasFunction(query, originalTarget, resolution, matches)
+        return new AliasFunction(query, originalTarget, range, matches)
     }
 
 }

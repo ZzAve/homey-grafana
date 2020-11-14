@@ -141,21 +141,33 @@ const getMetricsForTarget = async (targetMetrics, resolution) => {
  * @param resolution - time window to resolve for
  * @returns {Promise<*>}
  */
-const resolveSingleTarget = async (query, target, resolution, range) => {
+const resolveSingleTarget = async (query, target, range) => {
     const applicableFunction = AVAILABLE_FUNCTIONS.find(it => it.hasMatchingSyntax(query));
     if (!!applicableFunction) {
-        const instance = applicableFunction.of(query, target, resolution, range);
+        const instance = applicableFunction.of(query, target, range);
         return await instance.apply(resolveSingleTarget.bind(this))
     } else {
-        return await metricStatement(query, target, resolution, range)
+        return await metricStatement(query, target, range)
     }
 }
 
-const metricStatement = async (query, target, resolution, range) => {
+const metricStatement = async (query, target, range) => {
     const metrics = await searchMetrics(query, {strict: true});
-    // trim future datapoints outside range?
-    // don't trim past datapoints for aggregation purposes
-    return await getMetricsForTarget(metrics, resolution)
+
+    const resolution = convertRangeToResolution(range);
+    debug("Resolution picked: ", resolution);
+
+    const metricsResult = await getMetricsForTarget(metrics, resolution);
+
+    // TODO:  trim datapoints outside range
+    const rangeTo = new Date(range.to).getTime();
+    const rangeFrom = new Date(range.from).getTime();
+    const trimmedResult = metricsResult.map(entry => ({
+            target: entry.target,
+            datapoints: entry.datapoints.filter(v => v[1] >= rangeFrom && v[1] <= rangeTo)
+        })
+    );
+    return trimmedResult
 };
 
 
@@ -168,9 +180,7 @@ const queryMetrics = async (body) => {
 
     const series = await Promise.all(queryTargets.map(async target => {
         const query = target.target
-        return await resolveSingleTarget(query, target, resolution, body.range);
-
-        //todo: add trim
+        return await resolveSingleTarget(query, target, body.range);
     }));
 
     return series.flat()

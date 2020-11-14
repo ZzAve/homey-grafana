@@ -1,5 +1,3 @@
-const {convertRangeToResolution} = require( "../RangeConverter");
-
 const {QuerySyntaxError} = require("../QuerySyntaxError");
 
 const aliasRegex = new RegExp(/^timeShift\((.*),(\s+)?([0-9]+)([mhd])(\s+)?\)/)
@@ -16,21 +14,16 @@ const aliasRegex = new RegExp(/^timeShift\((.*),(\s+)?([0-9]+)([mhd])(\s+)?\)/)
  *
  */
 class TimeShiftFunction {
-    constructor(query, originalTarget, resolution, range, regexMatches) {
+    constructor(query, originalTarget, range, regexMatches) {
         this._query = query;
-        // this._resolution = resolution
 
         this._subQuery = regexMatches[1]
         this._shiftValue = regexMatches[3]
         this._shiftUnit = regexMatches[4]
 
 
-        const newRange = this._shiftBackRange(range);
-        this._resolution = convertRangeToResolution(newRange)
-
+        this._range = this._shiftBackRange(range);
         this._originalTarget = originalTarget;
-
-
     }
 
     _shiftBackRange(range) {
@@ -57,31 +50,30 @@ class TimeShiftFunction {
         const result = await subQueryResolver(
             this._subQuery,
             this._originalTarget,
-            this._resolution)
+            this._range)
 
         console.log(result[0].datapoints[1])
+
         //get shift in ms
         const forwardShift = this._getForwardShift()
-        result.map(entry => {
-            entry.datapoints.map(datapoint => {
-                //change time
-                datapoint[1] += forwardShift
-            })
-        })
+        result.map(entry => ({
+            target: entry.target,
+            datapoints: entry.datapoints.map(datapoint => [datapoint[0], datapoint[1] + forwardShift])
+        }))
         console.log(result[0].datapoints[1])
         return result
     }
 
     static hasMatchingSyntax = query => query.startsWith("timeShift(")
 
-    static of(query, originalTarget, resolution, range) {
+    static of(query, originalTarget, range) {
         let matches = query.match(aliasRegex);
         if (!matches) {
             throw new QuerySyntaxError('Function statement should adhere to the following signature: ' +
                 'timeShift(expression: Expression, timeIndication: TimeUnit) (examples 1m, 9h, 3d)')
         }
 
-        return new TimeShiftFunction(query, originalTarget, resolution, range, matches)
+        return new TimeShiftFunction(query, originalTarget, range, matches)
     }
 
     _getForwardShift() {
