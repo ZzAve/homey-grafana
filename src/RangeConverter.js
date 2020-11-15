@@ -20,7 +20,7 @@ const convertRangeToResolution = (range) => {
     const RESOLUTION_BUFFER = 1.1
     // difference in hours
     const diffInHours = (now - from) / (1000.0 * 60 * 60)
-    debug("diffInHours ", diffInHours)
+    // debug("diffInHours ", diffInHours)
     if (diffInHours <= 1 * RESOLUTION_BUFFER) return "lastHour";
     if (diffInHours <= 6 * RESOLUTION_BUFFER) return "last6Hours"
     if (diffInHours <= 24 * RESOLUTION_BUFFER) return "last24Hours"

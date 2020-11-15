@@ -1,3 +1,4 @@
+const {shiftBackRange} = require("./Utils");
 const {QuerySyntaxError} = require("../QuerySyntaxError");
 
 const aliasRegex = new RegExp(/^timeShift\((.*),(\s+)?([0-9]+)([mhd])(\s+)?\)/)
@@ -22,29 +23,9 @@ class TimeShiftFunction {
         this._shiftUnit = regexMatches[4]
 
 
-        this._range = this._shiftBackRange(range);
+        this._range = shiftBackRange(range, this._shiftUnit, this._shiftValue);
         this._originalTarget = originalTarget;
     }
-
-    _shiftBackRange(range) {
-        const newFrom = new Date(range.from);
-        const newTo = new Date(range.to);
-        if (this._shiftUnit === "d") {
-            newFrom.setDate(newFrom.getDate() - this._shiftValue)
-            newTo.setDate(newTo.getDate() - this._shiftValue)
-        } else if (this._shiftUnit === "h") {
-            newFrom.setHours(newFrom.getHours() - this._shiftValue)
-            newTo.setHours(newTo.getHours() - this._shiftValue)
-        } else if (this._shiftUnit === "m") {
-            newFrom.setMinutes(newFrom.getMinutes() - this._shiftValue)
-            newTo.setMinutes(newTo.getMinutes() - this._shiftValue)
-        }
-        return {
-            from: newFrom.toISOString(),
-            to: newTo.toISOString(),
-        };
-    }
-
 
     async apply(subQueryResolver) {
         const result = await subQueryResolver(
@@ -52,16 +33,13 @@ class TimeShiftFunction {
             this._originalTarget,
             this._range)
 
-        console.log(result[0].datapoints[1])
-
         //get shift in ms
         const forwardShift = this._getForwardShift()
-        result.map(entry => ({
+        const shiftedResult = result.map(entry => ({
             target: entry.target,
             datapoints: entry.datapoints.map(datapoint => [datapoint[0], datapoint[1] + forwardShift])
-        }))
-        console.log(result[0].datapoints[1])
-        return result
+        }));
+        return shiftedResult
     }
 
     static hasMatchingSyntax = query => query.startsWith("timeShift(")

@@ -159,24 +159,19 @@ const metricStatement = async (query, target, range) => {
 
     const metricsResult = await getMetricsForTarget(metrics, resolution);
 
-    // TODO:  trim datapoints outside range
     const rangeTo = new Date(range.to).getTime();
     const rangeFrom = new Date(range.from).getTime();
-    const trimmedResult = metricsResult.map(entry => ({
+    return metricsResult.map(entry => ({
             target: entry.target,
             datapoints: entry.datapoints.filter(v => v[1] >= rangeFrom && v[1] <= rangeTo)
         })
-    );
-    return trimmedResult
+    )
 };
 
 
 const queryMetrics = async (body) => {
     let queryTargets = body.targets;
     console.log(`Querying for targets ${JSON.stringify(queryTargets)}`);
-
-    const resolution = convertRangeToResolution(body.range);
-    debug("Resolution picked: ", resolution);
 
     const series = await Promise.all(queryTargets.map(async target => {
         const query = target.target
