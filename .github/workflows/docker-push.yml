@@ -26,9 +26,19 @@ jobs:
         echo ::set-output name=docker_platforms::linux/amd64,linux/arm64,linux/arm/v7
         echo ::set-output name=docker_image::${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}
 
-    - name: Docker Setup Buildx
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1.0.1
+      with:
+        platforms: all
+
+    - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@v1.0.2
+      with:
+        version: latest
+    
+    - name: Available platforms
+      run: echo ${{ steps.buildx.outputs.platforms }}
 
     - name: Environment
       run: |
