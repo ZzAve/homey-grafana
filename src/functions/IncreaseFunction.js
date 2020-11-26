@@ -89,7 +89,7 @@ class IncreaseFunction {
 
     getReferenceTime(datapoint, timeShift, resultsEntry) {
         const referenceTime = datapoint[1] - timeShift;
-        const isReferenceTimeInRange = referenceTime > resultsEntry.datapoints[0][1];
+        const isReferenceTimeInRange = referenceTime >= resultsEntry.datapoints[0][1];
 
         return isReferenceTimeInRange ? referenceTime : null
     }

@@ -114,13 +114,15 @@ const getMetricsForTarget = async (targetMetrics, resolution) => {
             const dataPoints = logEntries.values.map(dp => ([dp.v, new Date(dp.t).getTime()]));
             return {
                 target: `${metric.deviceName}~${metric.id}`,
-                datapoints: dataPoints
+                datapoints: dataPoints,
+                step: logEntries.step
             }
         } catch (e) {
             console.warn(`Issue resolving log entries for metric: ${JSON.stringify(metric)} resolution: ${resolution}`, e)
             return {
                 target: `${metric.deviceName}~${metric.id}`,
-                datapoints: []
+                datapoints: [],
+                step: 0
             }
         }
     }));
@@ -159,11 +161,14 @@ const metricStatement = async (query, target, range) => {
 
     const metricsResult = await getMetricsForTarget(metrics, resolution);
 
-    const rangeTo = new Date(range.to).getTime();
+
     const rangeFrom = new Date(range.from).getTime();
+    const rangeTo = new Date(range.to).getTime();
     return metricsResult.map(entry => ({
             target: entry.target,
-            datapoints: entry.datapoints.filter(v => v[1] >= rangeFrom && v[1] <= rangeTo)
+            datapoints: entry.datapoints.filter(v => v[1] >= rangeFrom - entry.step && v[1] <= rangeTo + entry.step),
+            step: entry.step
+
         })
     )
 };

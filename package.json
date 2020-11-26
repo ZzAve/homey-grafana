@@ -4,6 +4,7 @@
   "description": "A nodejs bridge to view Homey's insights logs in Grafana, without any additional data storage required",
   "main": "app.js",
   "scripts": {
+    "start": "DEBUG=* node app.js ",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Julius van Dis <vandis.j@gmail.com>",
