@@ -82,8 +82,13 @@ class SumFunction {
             }
 
             if (!!currentDatapoint && currentDatapoint[1] === datapoint[1]) {
-                const agg = (datapoint[0] || 0) + (currentDatapoint[0] || 0)
-                resolvedDatapoints.push([agg, datapoint[1]])
+                const dataPointsPresent = !!datapoint[0] || !!currentDatapoint[0];
+
+                // Only add the datapoint if at least 1 has a non-null value
+                if (dataPointsPresent) {
+                    const agg = (datapoint[0] || 0) + (currentDatapoint[0] || 0)
+                    resolvedDatapoints.push([agg, datapoint[1]])
+                }
                 currentIndex += 1
                 currentDatapoint = currentSeries.datapoints[currentIndex];
             } else {
