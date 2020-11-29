@@ -7,6 +7,13 @@ const DEFAULT_RESOLUTION = "last6Hours";
 const convertRangeToResolution = (range) => {
     debug("range: ", JSON.stringify(range))
 
+    const resolution = _convertRangeToResolution(range)
+    debug("Resolution picked", resolution )
+
+    return resolution
+}
+const _convertRangeToResolution = (range) => {
+
     // const rangeToResolutionMap = (
     //     "lastHour" | "lastHourLowRes" | "last6Hours" | "last6HoursLowRes" | "last24Hours" | "last3Days" |
     //     "last7Days" | "last14Days" | "last31Days" | "last3Months" | "last6Months" | "last2Years" |

@@ -157,8 +157,6 @@ const metricStatement = async (query, target, range) => {
     const metrics = await searchMetrics(query, {strict: true});
 
     const resolution = convertRangeToResolution(range);
-    debug("Resolution picked: ", resolution);
-
     const metricsResult = await getMetricsForTarget(metrics, resolution);
 
 
