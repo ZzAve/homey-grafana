@@ -3,6 +3,7 @@ const AliasSubFunction = require("./AliasSubFunction");
 const TimeShiftFunction = require("./TimeShiftFunction");
 const IncreaseFunction = require("./IncreaseFunction");
 const IncreaseRangeFunction = require("./IncreaseRangeFunction");
+const SumFunction = require("./SumFunction");
 
 
 const AVAILABLE_FUNCTIONS = [
@@ -10,6 +11,7 @@ const AVAILABLE_FUNCTIONS = [
     AliasSubFunction,
     IncreaseFunction,
     IncreaseRangeFunction,
+    SumFunction,
     TimeShiftFunction,
 ]
 
