@@ -42,14 +42,15 @@ class SumFunction {
             target: this._query,
             datapoints: []
         };
-        return result.reduce((acc, current) => {
+        const summedMetric = result.reduce((acc, current) => {
             const resolvedDatapoints = this.combineAndSumDatapoints(acc, current);
             return {
                 ...acc,
                 datapoints: resolvedDatapoints
             }
-        }, initialSum)
+        }, initialSum);
 
+        return [summedMetric]
     }
 
     // Iterate over datapoints of series to sum and
