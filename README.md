@@ -16,7 +16,7 @@ Start the api that integrates with Homey:
 ```bash
 $ npm ci
 $ homey login # to allow the homey dependency to access your homey
-$ node app.js
+$ node app.ts
 ```
 The api will start and is ready to be used from grafana. Per default port 8080 is used and you can start creating your first dashboard
 

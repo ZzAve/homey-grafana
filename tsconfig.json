@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "target": "es6",
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "rootDir": "./src",
+    "outDir": "./.ts-node",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "declaration": false,
+    "sourceMap": true,
+    "inlineSources": true,
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "./src/homey.d.ts"
+    ],
+    "stripInternal": true,
+    "incremental": true,
+    "skipLibCheck": true,
+    "importsNotUsedAsValues": "error",
+    "inlineSourceMap": false,
+    "noEmit": false
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
+}

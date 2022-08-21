@@ -1,11 +1,15 @@
-const restify = require("restify");
+import {QuerySyntaxError} from "./QuerySyntaxError";
+
 const corsMiddleware = require('restify-cors-middleware');
-const HomeyMetricResolver = require("./src/HomeyMetricResolver");
-const {QuerySyntaxError} = require("./src/QuerySyntaxError");
-const Debug = require('debug')
+import type {Server, Request, Response, Next, RequestHandler} from "restify";
+
+import * as HomeyMetricResolver from "./HomeyMetricResolver";
+
+import * as restify from "restify";
+
+import Debug from "debug";
 
 const debug = Debug("homey-grafana:api");
-
 
 const cors = corsMiddleware({
     preflightMaxAge: 5,
@@ -18,52 +22,55 @@ const cors = corsMiddleware({
  * Initialize Server
  */
 
-const getRoot = (req, res, next) => {
+const getRoot: RequestHandler = (req: Request, res: Response, next: Next) => {
     res.send(200, {});
     next();
 };
 
-const searchMetrics = async (req, res, next) => {
-    const metrics = await HomeyMetricResolver.searchMetrics(req.body.target);
+const searchMetrics = async (req: Request, res: Response, next: Next) => {
+    const metrics: any[] = await HomeyMetricResolver.searchMetrics(req.body.target);
     res.send(200, metrics.map(m => m.originalTarget));
     next();
 };
 
-const queryMetrics = async (req, res, next) => {
+const queryMetrics = async (req: Request, res: Response, next: Next) => {
     debug("in QueryMetric");
     try {
-
-        let body = await HomeyMetricResolver.queryMetrics(req.body);
+        const body = await HomeyMetricResolver.queryMetrics(req.body);
         res.send(200, body);
         next();
     } catch (e) {
         if (e instanceof QuerySyntaxError) {
-            res.send(500, {message: e.message})
+            res.send(500, {message: (e as QuerySyntaxError).message});
         } else {
             console.error("Unknown, uncaught error occurred: ", e)
-            res.send(500, {message: e.message})
+            res.send(500, {message: e})
         }
         next()
     }
 };
 
-const fetchAnnotations = (req, res, next) => {
+//TODO: implement me
+const fetchAnnotations = (req: Request, res: Response, next: Next) => {
     debug("in fetch annotations")
     res.send(200, {});
     next();
 };
 
-const getTagKeysForFilters = (req, res, next) => {
+//TODO: implement me
+const getTagKeysForFilters = (req: Request, res: Response, next: Next) => {
     res.send(200, {});
     next();
 };
 
-const getTagValuesForFilters = (req, res, next) => {
+//TODO: implement me
+const getTagValuesForFilters = (req: Request, res: Response, next: Next) => {
     res.send(200, {});
     next();
 };
 
-const server = restify.createServer();
+const server: Server = restify.createServer();
+
 server.pre(cors.preflight);
 server.pre(restify.plugins.pre.dedupeSlashes());
 server.use(cors.actual);

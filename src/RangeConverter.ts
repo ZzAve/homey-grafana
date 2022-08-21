@@ -1,10 +1,10 @@
-const Debug = require('debug')
+import Debug from "debug";
 
 const debug = Debug("homey-grafana:rangeConverter");
 
 const DEFAULT_RESOLUTION = "last6Hours";
 
-const convertRangeToResolution = (range) => {
+export const convertRangeToResolution = (range: any) => {
     debug("range: ", JSON.stringify(range))
 
     const resolution = _convertRangeToResolution(range)
@@ -12,7 +12,7 @@ const convertRangeToResolution = (range) => {
 
     return resolution
 }
-const _convertRangeToResolution = (range) => {
+const _convertRangeToResolution = (range: any) => {
 
     // const rangeToResolutionMap = (
     //     "lastHour" | "lastHourLowRes" | "last6Hours" | "last6HoursLowRes" | "last24Hours" | "last3Days" |
@@ -26,7 +26,7 @@ const _convertRangeToResolution = (range) => {
 
     const RESOLUTION_BUFFER = 1.1
     // difference in hours
-    const diffInHours = (now - from) / (1000.0 * 60 * 60)
+    const diffInHours = (now.getUTCMilliseconds() - from.getUTCMilliseconds()) / (1000.0 * 60 * 60)
     // debug("diffInHours ", diffInHours)
     if (diffInHours <= 1 * RESOLUTION_BUFFER) return "lastHour";
     if (diffInHours <= 6 * RESOLUTION_BUFFER) return "last6Hours"
@@ -48,7 +48,8 @@ const _convertRangeToResolution = (range) => {
     return DEFAULT_RESOLUTION
 }
 
-module.exports = {
-    DEFAULT_RESOLUTION,
-    convertRangeToResolution
-}
+// module.exports = {
+//     DEFAULT_RESOLUTION,
+    // convertRangeToResolution
+// }
+

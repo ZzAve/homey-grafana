@@ -1,7 +1,11 @@
-const {shiftBackRange} = require("./Utils");
-const {QuerySyntaxError} = require("../QuerySyntaxError");
-const Debug = require('debug')
-const {binarySearch} = require("./Utils");
+import type {QueryableFunction, QueryableFunctionFactory} from "./Functions";
+
+import {binarySearch, shiftBackRange} from "./Utils";
+
+import {QuerySyntaxError} from "../QuerySyntaxError";
+
+import Debug from "debug";
+
 const debug = Debug("homey-grafana:increaseFunction");
 
 const aliasRegex = new RegExp(/^increase\((.*),(\s+)?([0-9]+)([mhd])(\s+)?\)/)
@@ -20,8 +24,32 @@ const aliasRegex = new RegExp(/^increase\((.*),(\s+)?([0-9]+)([mhd])(\s+)?\)/)
  *
  *
  */
-class IncreaseFunction {
-    constructor(query, originalTarget, range, regexMatches) {
+
+class IncreaseFunctionFactory implements QueryableFunctionFactory {
+    hasMatchingSyntax: ((query: any) => boolean) = (query: any) => query.startsWith("increase(")
+
+    of(query: any, originalTarget: any, range: any) {
+        let matches = query.match(aliasRegex);
+        if (!matches) {
+            throw new QuerySyntaxError('Function statement should adhere to the following signature: ' +
+                'increase(expression: Expression, timeIndication: TimeUnit) (examples 1m, 9h, 3d)')
+        }
+
+        return new IncreaseFunction(query, originalTarget, range, matches)
+    }
+}
+
+export const increaseFunctionFactory = new IncreaseFunctionFactory()
+
+class IncreaseFunction implements QueryableFunction {
+    private _query: any;
+    private readonly _originalTarget: any;
+    private readonly _range: any;
+    private readonly _subQuery: any;
+    private readonly _timeValue: any;
+    private readonly _timeUnit: any;
+
+    constructor(query: any, originalTarget: any, range: any, regexMatches: any) {
         this._query = query;
 
         this._originalTarget = originalTarget;
@@ -38,7 +66,7 @@ class IncreaseFunction {
         }
     }
 
-    async apply(subQueryResolver) {
+    async apply(subQueryResolver: any) {
         debug(`Calling subQueryResolver for increase function for '${this._subQuery}'. range: ${JSON.stringify(this._range)})`)
 
         const result = await subQueryResolver(
@@ -47,17 +75,17 @@ class IncreaseFunction {
             this._range)
 
 
-        debug(`Applying increase for results of subQuery resolver. interval: ${this._timeValue}${this._timeUnit} targets: ${result.map(it => it.target)} `)
+        debug(`Applying increase for results of subQuery resolver. interval: ${this._timeValue}${this._timeUnit} targets: ${result.map((it: any) => it.target)} `)
         return this.applyIncreaseFunctionToEntries(result);
     }
 
-    applyIncreaseFunctionToEntries(result) {
+    applyIncreaseFunctionToEntries(result: any) {
         const shift = this._getTimeShiftInMsec()
 
         //get get aggregate for each
-        return result.map(entry => ({
+        return result.map((entry:any) => ({
                 target: entry.target,
-                datapoints: entry.datapoints.map(it => {
+                datapoints: entry.datapoints.map((it: any) => {
                         const referenceDatapoint = this.getReferenceDatapoint(it, shift, entry)
 
                         return !!referenceDatapoint ? [
@@ -65,16 +93,16 @@ class IncreaseFunction {
                             it[1]
                         ] : null
                     }
-                ).filter(it => it != null)
+                ).filter((it: any) => it != null)
             })
         )
     }
 
-    getReferenceDatapoint(datapoint, timeShift, entry) {
+    getReferenceDatapoint(datapoint: any, timeShift: any, entry: any) {
         if (datapoint[0] != null) {
             const referenceTime = this.getReferenceTime(datapoint, timeShift, entry);
             if (!!referenceTime) {
-                const referenceDatapointIndex = binarySearch(entry.datapoints, dp => referenceTime - dp[1]);
+                const referenceDatapointIndex = binarySearch(entry.datapoints, (dp: any) => referenceTime - dp[1]);
                 const referenceDatapoint = entry.datapoints[referenceDatapointIndex]
 
                 if (!!referenceDatapoint && referenceDatapoint[0] != null) {
@@ -87,23 +115,11 @@ class IncreaseFunction {
 
     }
 
-    getReferenceTime(datapoint, timeShift, resultsEntry) {
+    getReferenceTime(datapoint: any, timeShift: any, resultsEntry: any) {
         const referenceTime = datapoint[1] - timeShift;
         const isReferenceTimeInRange = referenceTime >= resultsEntry.datapoints[0][1];
 
         return isReferenceTimeInRange ? referenceTime : null
-    }
-
-    static hasMatchingSyntax = query => query.startsWith("increase(")
-
-    static of(query, originalTarget, range) {
-        let matches = query.match(aliasRegex);
-        if (!matches) {
-            throw new QuerySyntaxError('Function statement should adhere to the following signature: ' +
-                'increase(expression: Expression, timeIndication: TimeUnit) (examples 1m, 9h, 3d)')
-        }
-
-        return new IncreaseFunction(query, originalTarget, range, matches)
     }
 
     _getTimeShiftInMsec() {
@@ -119,4 +135,3 @@ class IncreaseFunction {
     }
 }
 
-module.exports = IncreaseFunction;

@@ -1,43 +1,47 @@
-const {convertRangeToResolution} = require("./RangeConverter");
+import {convertRangeToResolution} from "./RangeConverter";
+import {APPLICABLE_FUNCTION_FACTORIES, QueryableFunction, QueryableFunctionFactory} from "./functions/Functions";
 
-const {AthomApi} = require('homey');
-const Debug = require('debug')
-const NodeCache = require("node-cache");
-const {AVAILABLE_FUNCTIONS} = require("./functions/Functions");
+import Debug from "debug";
+
+import * as NodeCache from "node-cache";
+
+import {AthomApi} from "homey";
+import type { Homey, InsightsLog, LogEntries} from "homey";
+
 
 const debug = Debug("homey-grafana:homey-service");
-const metricNameCache = new NodeCache({stdTTL: 180});
+const metricNameCache: NodeCache = new NodeCache({stdTTL: 180});
 
-async function fetchHomey() {
+const fetchHomey: () => Promise<Homey> = async () => {
     console.log("Initializing homey")
     // Initialize API.
     await AthomApi._initApi();
 
     // Get active Homey.
-    return await AthomApi.getActiveHomey();
-}
+    return (await AthomApi.getActiveHomey()) as Homey;
+};
 
-let _homey = undefined;
+let _homey: Homey | undefined = undefined;
 
-async function getHomey() {
+export const getHomey = async () => {
     if (_homey === undefined) {
-        _homey = fetchHomey()
+        _homey = await fetchHomey()
     }
 
-    return await _homey
-}
+    return _homey
+};
 
-const getEnrichedMetrics = (metric) => ({
+const getEnrichedMetrics = (metric: any) => ({
     originalTarget: composeReadableMetricName(metric),
     deviceName: metric.uriObj.name,
     id: metric.id,
     uri: metric.uri
 });
 
-async function fetchAllMetrics() {
+const fetchAllMetrics = async () => {
     console.log("Fetching all metrics");
     const homey = await getHomey();
-    const metrics = await homey.insights.getLogs();
+    const metrics: InsightsLog[] = await homey.insights.getLogs();
     const enrichedMetrics = metrics
         .filter(it => it.type !== "boolean")
         .map(getEnrichedMetrics);
@@ -46,12 +50,12 @@ async function fetchAllMetrics() {
     debug(enrichedMetrics.map(it => it.originalTarget))
     debug("---")
     return enrichedMetrics
-}
+};
 
 const KEY = "METRICS_NAME_CACHE_KEY"
 
-async function getAllMetrics() {
-    let result = metricNameCache.get(KEY)
+const getAllMetrics = async () => {
+    let result = metricNameCache.get<{metrics:any}>(KEY)
     if (result === undefined) {
         result = {metrics: await fetchAllMetrics()};
         metricNameCache.set(KEY, result)
@@ -59,31 +63,31 @@ async function getAllMetrics() {
 
     // const allMetrics = ["upper_25", "upper_50", "upper_75", "upper_90", "upper_95"];
     return result.metrics;
-}
+};
 
 
-async function getLogEntries(metric) {
+const getLogEntries: (metric: any) => Promise<LogEntries> = async (metric: any) => {
     const homey = await getHomey();
     return await homey.insights.getLogEntries({
         uri: metric.uri,
         id: metric.id,
         resolution: metric.resolution
     })
-}
+};
 
-const composeReadableMetricName = (metric) => `${metric.uriObj.name}~${metric.id}~${metric.uri}`;
+const composeReadableMetricName = (metric: any) => `${metric.uriObj.name}~${metric.id}~${metric.uri}`;
 
-const getMetricFilter = (query) => {
+const getMetricFilter = (query: any) => {
     try {
         const flags = ""
         const pattern = query.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1');
-        return metric => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
+        return (metric: any) => metric.originalTarget.match(new RegExp(pattern, flags)) !== null
     } catch (e) {
         return false
     }
 };
 
-const searchMetrics = async (query, opts) => {
+export const searchMetrics = async (query: any, opts?: any) => {
     debug(`SearchMetrics for query: ${JSON.stringify(query)}, opts: ${JSON.stringify(opts || {})}`);
     const allMetrics = await getAllMetrics();
     if (!query || 0 === query.length) {
@@ -99,9 +103,9 @@ const searchMetrics = async (query, opts) => {
 };
 
 
-const getMetricsForTarget = async (targetMetrics, resolution) => {
+const getMetricsForTarget = async (targetMetrics: any, resolution: any) => {
     debug("target: ", JSON.stringify(targetMetrics));
-    const metrics = Promise.all(targetMetrics.map(async metric => {
+    const metrics = Promise.all(targetMetrics.map(async (metric: any) => {
         console.log("Fetching metric for ", JSON.stringify(metric));
         try {
             const logEntries = await getLogEntries(
@@ -111,7 +115,7 @@ const getMetricsForTarget = async (targetMetrics, resolution) => {
                     resolution: resolution
                 }
             );
-            const dataPoints = logEntries.values.map(dp => ([dp.v, new Date(dp.t).getTime()]));
+            const dataPoints = logEntries.values.map((dp: any) => ([dp.v, new Date(dp.t).getTime()]));
             return {
                 target: `${metric.deviceName}~${metric.id}`,
                 datapoints: dataPoints,
@@ -140,11 +144,11 @@ const getMetricsForTarget = async (targetMetrics, resolution) => {
  *
  * @param query - 'target' value, expression, or subExpression
  * @param target - object of full target, raw request from client
- * @param resolution - time window to resolve for
+ * @param range - time window to resolve for
  * @returns {Promise<*>}
  */
-const resolveSingleTarget = async (query, target, range) => {
-    const applicableFunction = AVAILABLE_FUNCTIONS.find(it => it.hasMatchingSyntax(query));
+const resolveSingleTarget: (query: any, target: any, range: any) => Promise<any> = async (query: any, target: any, range: any) => {
+    const applicableFunction = APPLICABLE_FUNCTION_FACTORIES.find((it: QueryableFunctionFactory) => it.hasMatchingSyntax(query));
     if (!!applicableFunction) {
         const instance = applicableFunction.of(query, target, range);
         return await instance.apply(resolveSingleTarget.bind(this))
@@ -153,7 +157,7 @@ const resolveSingleTarget = async (query, target, range) => {
     }
 }
 
-const metricStatement = async (query, target, range) => {
+const metricStatement = async (query: any, target: any, range: any) => {
     const metrics = await searchMetrics(query, {strict: true});
 
     const resolution = convertRangeToResolution(range);
@@ -164,28 +168,21 @@ const metricStatement = async (query, target, range) => {
     const rangeTo = new Date(range.to).getTime();
     return metricsResult.map(entry => ({
             target: entry.target,
-            datapoints: entry.datapoints.filter(v => v[1] >= rangeFrom - entry.step && v[1] <= rangeTo + entry.step),
+            datapoints: entry.datapoints.filter((v:any) => v[1] >= rangeFrom - entry.step && v[1] <= rangeTo + entry.step),
             step: entry.step
 
         })
     )
 };
 
-
-const queryMetrics = async (body) => {
+export const queryMetrics = async (body: any) => {
     let queryTargets = body.targets;
     console.log(`Querying for targets ${JSON.stringify(queryTargets)}`);
 
-    const series = await Promise.all(queryTargets.map(async target => {
+    const series = await Promise.all(queryTargets.map(async (target: any) => {
         const query = target.target
         return await resolveSingleTarget(query, target, body.range);
     }));
 
     return series.flat()
-};
-
-module.exports = {
-    getHomey,
-    searchMetrics,
-    queryMetrics
 };

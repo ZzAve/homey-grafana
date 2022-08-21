@@ -1,4 +1,6 @@
-const shiftBackRange = (range, timeUnit, timeValue) => {
+
+
+export const shiftBackRange = (range: any, timeUnit: any, timeValue: any) => {
     const newFrom = new Date(range.from);
     const newTo = new Date(range.to);
     if (timeUnit === "d") {
@@ -18,7 +20,7 @@ const shiftBackRange = (range, timeUnit, timeValue) => {
 }
 
 
-const binarySearch = (array, comparePredicate) => {
+export const binarySearch = (array: any, comparePredicate: any) => {
     let lowerBound = 0;
     let upperBound = array.length - 1;
     while (lowerBound <= upperBound) {
@@ -33,9 +35,4 @@ const binarySearch = (array, comparePredicate) => {
         }
     }
     return -lowerBound - 1;
-}
-
-module.exports = {
-    binarySearch,
-    shiftBackRange,
 }
