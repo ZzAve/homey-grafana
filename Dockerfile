@@ -1,4 +1,4 @@
-FROM node:15-alpine as builder
+FROM node:19-alpine as builder
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci --only-production && apk del .gyp
 
 ##################
-FROM node:15-alpine
+FROM node:19-alpine
 
 # Create app directory
 WORKDIR /usr/src/app
