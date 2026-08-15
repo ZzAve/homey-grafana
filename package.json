@@ -16,7 +16,7 @@
     "debug": "^4.3.1",
     "homey": "^2.9.2",
     "node-cache": "^5.1.2",
-    "restify": "^8.5.1",
+    "restify": "^11.0.0",
     "restify-cors-middleware": "^1.1.1"
   }
 }
